@@ -3,9 +3,9 @@
 namespace App\Entity;
 
 use App\Repository\ClientRepository;
-use BcMath\Number;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
 class Client
@@ -13,30 +13,39 @@ class Client
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(["client"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["client"])]
     private ?string $Name = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["client"])]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["client"])]
     private ?string $LastName = null;
 
     #[ORM\Column(length: 20, unique: true)]
+    #[Groups(["client"])]
     private ?string $number = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["client"])]
     private ?string $email = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["client"])]
     private ?string $Adresse = null;
 
     #[ORM\Column]
+    #[Groups(["client"])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["client"])]
     private ?string $identityDocumentPath = null;
 
     public function getId(): ?int

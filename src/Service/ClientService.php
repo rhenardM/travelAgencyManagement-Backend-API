@@ -31,9 +31,17 @@ public function __construct(EntityManagerInterface $em, string $uploadDir)
         $client->setNumber($data['number']);
         $client->setEmail($data['email'] ?? null);
         $client->setAdresse($data['adresse'] ?? '');
+        $client->setCreatedAt(new \DateTimeImmutable());
 
-        // Gestion upload fichier
+        // Gestion upload fichier avec vérification du type MIME
         if ($file) {
+            $allowedMimeTypes = [
+                'application/pdf',
+                'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/jpg',
+            ];
+            if (!in_array($file->getMimeType(), $allowedMimeTypes, true)) {
+                throw new \InvalidArgumentException('Seuls les fichiers PDF ou images (jpg, png, gif, webp, avif) sont acceptés.');
+            }
             $filename = uniqid('client_') . '.' . $file->guessExtension();
             $file->move($this->uploadDir, $filename);
             $client->setIdentityDocumentPath('/uploads/clients/' . $filename);
