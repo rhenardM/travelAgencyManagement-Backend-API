@@ -12,6 +12,8 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+use OpenApi\Attributes as OA;
+
 
 #[Route('/api/clients')]
 class ClientController extends AbstractController
@@ -28,8 +30,19 @@ class ClientController extends AbstractController
     }
 
     // GET /api/clients
-    #[IsGranted(['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'])]
+    #[IsGranted('ROLE_ADMIN or ROLE_SUPER_ADMIN')]
     #[Route('/', name: 'client_list', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/clients/',
+        summary: 'Liste tous les clients',
+        security: [['bearerAuth' => []]],
+        tags: ['Clients'],
+        responses: [
+            new OA\Response(response: 200, description: 'Liste des clients'),
+            new OA\Response(response: 401, description: 'Non authentifié'),
+            new OA\Response(response: 403, description: 'Accès refusé')
+        ]
+    )]
     public function list(): Response
     {
         $clients = $this->clientService->getAllClients();
@@ -38,8 +51,23 @@ class ClientController extends AbstractController
     }
 
     // GET /api/clients/{id}
-    #[IsGranted(['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'])]
+    #[IsGranted('ROLE_ADMIN or ROLE_SUPER_ADMIN')]
     #[Route('/{id}', name: 'client_show', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/clients/{id}',
+        summary: 'Détail d\'un client',
+        security: [['bearerAuth' => []]],
+        tags: ['Clients'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Détail du client'),
+            new OA\Response(response: 404, description: 'Client non trouvé'),
+            new OA\Response(response: 401, description: 'Non authentifié'),
+            new OA\Response(response: 403, description: 'Accès refusé')
+        ]
+    )]
     public function show(int $id): Response
     {
         $client = $this->clientService->getClientById($id);
@@ -54,6 +82,36 @@ class ClientController extends AbstractController
     // POST /api/clients
     #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/', name: 'client_create', methods: ['POST'])]
+    #[OA\Post(
+        path: '/api/clients/',
+        summary: 'Créer un client',
+        security: [['bearerAuth' => []]],
+        tags: ['Clients'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(
+                    required: ['name', 'firstName', 'lastName', 'number', 'email', 'adresse', 'identityDocument'],
+                    properties: [
+                        new OA\Property(property: 'name', type: 'string'),
+                        new OA\Property(property: 'firstName', type: 'string'),
+                        new OA\Property(property: 'lastName', type: 'string'),
+                        new OA\Property(property: 'number', type: 'string'),
+                        new OA\Property(property: 'email', type: 'string'),
+                        new OA\Property(property: 'adresse', type: 'string'),
+                        new OA\Property(property: 'identityDocument', type: 'string', format: 'binary')
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Client créé'),
+            new OA\Response(response: 400, description: 'Erreur de validation'),
+            new OA\Response(response: 401, description: 'Non authentifié'),
+            new OA\Response(response: 403, description: 'Accès refusé')
+        ]
+    )]
     public function create(Request $request): Response
     {
         $data = $request->request->all();
@@ -71,6 +129,39 @@ class ClientController extends AbstractController
     // PUT /api/clients/{id}
     #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/{id}', name: 'client_update', methods: ['PUT'])]
+    #[OA\Put(
+        path: '/api/clients/{id}',
+        summary: 'Met à jour un client',
+        security: [['bearerAuth' => []]],
+        tags: ['Clients'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))
+        ],
+        requestBody: new OA\RequestBody(
+            required: false,
+            content: new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(property: 'name', type: 'string'),
+                        new OA\Property(property: 'firstName', type: 'string'),
+                        new OA\Property(property: 'lastName', type: 'string'),
+                        new OA\Property(property: 'number', type: 'string'),
+                        new OA\Property(property: 'email', type: 'string'),
+                        new OA\Property(property: 'adresse', type: 'string'),
+                        new OA\Property(property: 'identityDocument', type: 'string', format: 'binary')
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Client mis à jour'),
+            new OA\Response(response: 400, description: 'Erreur de validation'),
+            new OA\Response(response: 404, description: 'Client non trouvé'),
+            new OA\Response(response: 401, description: 'Non authentifié'),
+            new OA\Response(response: 403, description: 'Accès refusé')
+        ]
+    )]
     public function update(Request $request, int $id): Response
     {
         $client = $this->clientService->getClientById($id);
@@ -112,6 +203,21 @@ class ClientController extends AbstractController
     // DELETE /api/clients/{id}
     #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/{id}', name: 'client_delete', methods: ['DELETE'])]
+    #[OA\Delete(
+        path: '/api/clients/{id}',
+        summary: 'Supprime un client',
+        security: [['bearerAuth' => []]],
+        tags: ['Clients'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Client supprimé'),
+            new OA\Response(response: 404, description: 'Client non trouvé'),
+            new OA\Response(response: 401, description: 'Non authentifié'),
+            new OA\Response(response: 403, description: 'Accès refusé')
+        ]
+    )]
     public function delete(int $id): Response
     {
         $client = $this->clientService->getClientById($id);
