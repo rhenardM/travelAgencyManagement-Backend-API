@@ -26,10 +26,21 @@ security:
             # https://symfony.com/doc/current/security/impersonating_user.html
             # switch_user: true
 
+            json_login:
+                check_path: /api/login
+                username_path: username
+                password_path: password
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+            stateless: true
+            jwt: ~
+
     # Note: Only the *first* matching rule is applied
     access_control:
         # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/profile, roles: ROLE_USER }
+        - { path : ^/api/clients, roles:  ROLE_SUPER_ADMIN, methods: [GET, POST, PUT, DELETE] }
+        - { path : ^/api/clients/, roles:  ROLE_ADMIN, methods: [GET, POST,] }
 
 when@test:
     security:

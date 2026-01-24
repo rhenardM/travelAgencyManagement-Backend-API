@@ -10,6 +10,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+
 
 #[Route('/api/clients')]
 class ClientController extends AbstractController
@@ -26,6 +28,7 @@ class ClientController extends AbstractController
     }
 
     // GET /api/clients
+    #[IsGranted(['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'])]
     #[Route('/', name: 'client_list', methods: ['GET'])]
     public function list(): Response
     {
@@ -35,6 +38,7 @@ class ClientController extends AbstractController
     }
 
     // GET /api/clients/{id}
+    #[IsGranted(['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'])]
     #[Route('/{id}', name: 'client_show', methods: ['GET'])]
     public function show(int $id): Response
     {
@@ -48,6 +52,7 @@ class ClientController extends AbstractController
     }
 
     // POST /api/clients
+    #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/', name: 'client_create', methods: ['POST'])]
     public function create(Request $request): Response
     {
@@ -64,6 +69,7 @@ class ClientController extends AbstractController
     }
 
     // PUT /api/clients/{id}
+    #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/{id}', name: 'client_update', methods: ['PUT'])]
     public function update(Request $request, int $id): Response
     {
@@ -104,7 +110,7 @@ class ClientController extends AbstractController
     }
 
     // DELETE /api/clients/{id}
-    
+    #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/{id}', name: 'client_delete', methods: ['DELETE'])]
     public function delete(int $id): Response
     {
