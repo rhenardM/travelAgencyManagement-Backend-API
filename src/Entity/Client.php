@@ -48,6 +48,10 @@ class Client
     #[Groups(["client"])]
     private ?string $identityDocumentPath = null;
 
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
+    #[Groups(["client"])]
+    private ?string $profilePicture = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -146,6 +150,17 @@ class Client
     {
         $this->identityDocumentPath = $identityDocumentPath;
 
+        return $this;
+    }
+
+    public function getProfilePicture(): ?string
+    {
+        return $this->profilePicture;
+    }
+
+    public function setProfilePicture(?string $profilePicture): static
+    {
+        $this->profilePicture = $profilePicture;
         return $this;
     }
 }
