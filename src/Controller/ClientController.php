@@ -3,7 +3,7 @@
 
 namespace App\Controller;
 
-use App\Entity\Client;
+// use App\Entity\Client;
 use App\Service\ClientService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,7 +31,7 @@ class ClientController extends AbstractController
     }
 
     // GET /api/clients
-    #[IsGranted('ROLE_ADMIN or ROLE_SUPER_ADMIN')]
+    // #[IsGranted(expression: 'is_granted("ROLE_SUPER_ADMIN") or is_granted("ROLE_ADMIN")')]
     #[Route('/', name: 'client_list', methods: ['GET'])]
     #[OA\Get(
         path: '/api/clients/',
@@ -52,7 +52,7 @@ class ClientController extends AbstractController
     }
 
     // GET /api/clients/{id}
-    #[IsGranted('ROLE_ADMIN or ROLE_SUPER_ADMIN')]
+    // #[IsGranted(expression: 'is_granted("ROLE_SUPER_ADMIN") or is_granted("ROLE_ADMIN")')]
     #[Route('/{id}', name: 'client_show', methods: ['GET'])]
     #[OA\Get(
         path: '/api/clients/{id}',
@@ -81,7 +81,7 @@ class ClientController extends AbstractController
     }
 
     // POST /api/clients
-    #[IsGranted('ROLE_SUPER_ADMIN')]
+    // #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/', name: 'client_create', methods: ['POST'])]
     #[OA\Post(
         path: '/api/clients/',
@@ -113,6 +113,7 @@ class ClientController extends AbstractController
             new OA\Response(response: 403, description: 'Accès refusé')
         ]
     )]
+    // #[IsGranted('ROLE_SUPER_ADMIN')]
     public function create(Request $request): Response
     {
         $data = $request->request->all();
@@ -163,6 +164,7 @@ class ClientController extends AbstractController
             new OA\Response(response: 403, description: 'Accès refusé')
         ]
     )]
+    // #[IsGranted('ROLE_SUPER_ADMIN')]
     public function update(Request $request, int $id): Response
     {
         $client = $this->clientService->getClientById($id);
@@ -202,7 +204,7 @@ class ClientController extends AbstractController
     }
 
     // DELETE /api/clients/{id}
-    #[IsGranted('ROLE_SUPER_ADMIN')]
+    // #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/{id}', name: 'client_delete', methods: ['DELETE'])]
     #[OA\Delete(
         path: '/api/clients/{id}',
@@ -219,6 +221,7 @@ class ClientController extends AbstractController
             new OA\Response(response: 403, description: 'Accès refusé')
         ]
     )]
+    // #[IsGranted('ROLE_SUPER_ADMIN')]
     public function delete(int $id): Response
     {
         $client = $this->clientService->getClientById($id);
