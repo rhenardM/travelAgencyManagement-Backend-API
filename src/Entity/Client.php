@@ -3,70 +3,97 @@
 namespace App\Entity;
 
 use App\Repository\ClientRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class Client
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(["client"])]
+    #[Groups(['client'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["client"])]
-    private ?string $Name = null;
+    #[Groups(['client'])]
 
-    #[ORM\Column(length: 255)]
-    #[Groups(["client"])]
+    private ?string $name = null;
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["client"])]
-    private ?string $LastName = null;
+    #[Groups(['client'])]
+    private ?string $lastName = null;
 
     #[ORM\Column(length: 20, unique: true)]
-    #[Groups(["client"])]
-    private ?string $number = null;
+    #[Groups(['client'])]
+    private ?string $phone = null;
 
-    #[ORM\Column(length: 255)]
-    #[Groups(["client"])]
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['client'])]
     private ?string $email = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(["client"])]
-    private ?string $Adresse = null;
+    #[Groups(['client'])]
+    private ?string $address = null;
 
-    #[ORM\Column]
-    #[Groups(["client"])]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    #[Groups(['client'])]
     private ?\DateTimeImmutable $createdAt = null;
 
-    #[ORM\Column(length: 255)]
-    #[Groups(["client"])]
-    private ?string $identityDocumentPath = null;
+    /**
+     * Photo de profil du client
+     * Ex: /uploads/clients/profile/client_123.jpg
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['client'])]
+    private ?string $profilePicturePath = null;
 
-    #[ORM\Column(type: "string", length: 255, nullable: true)]
-    #[Groups(["client"])]
-    private ?string $profilePicture = null;
+    /**
+     * Preuves d'identité (image ou PDF)
+     */
+    #[ORM\OneToMany(
+        mappedBy: 'client',
+        targetEntity: IdentityProof::class,
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true
+    )]
+    #[Groups(['client'])]
+    private Collection $identityProofs;
+
+    public function __construct()
+    {
+        $this->identityProofs = new ArrayCollection();
+    }
+
+    #[ORM\PrePersist]
+    public function onPrePersist(): void
+    {
+        $this->createdAt = new \DateTimeImmutable();
+    }
+
+    // =======================
+    // GETTERS & SETTERS
+    // =======================
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getName(): ?string
+    public function setName(string $name): self
     {
-        return $this->Name;
+        $this->name = $name;
+        return $this;
     }
 
-    public function setName(string $Name): static
+    public function getName(): ?string
     {
-        $this->Name = $Name;
-
-        return $this;
+        return $this->name;
     }
 
     public function getFirstName(): ?string
@@ -74,34 +101,36 @@ class Client
         return $this->firstName;
     }
 
-    public function setFirstName(string $firstName): static
+    public function setFirstName(string $firstName): self
     {
         $this->firstName = $firstName;
-
         return $this;
     }
 
     public function getLastName(): ?string
     {
-        return $this->LastName;
+        return $this->lastName;
     }
 
-    public function setLastName(string $LastName): static
+    public function setLastName(string $lastName): self
     {
-        $this->LastName = $LastName;
-
+        $this->lastName = $lastName;
         return $this;
     }
 
-    public function getNumber(): ?string
+    public function getFullName(): string
     {
-        return $this->number;
+        return trim($this->firstName . ' ' . $this->lastName);
     }
 
-    public function setNumber(string $number): static
+    public function getPhone(): ?string
     {
-        $this->number = $number;
+        return $this->phone;
+    }
 
+    public function setPhone(string $phone): self
+    {
+        $this->phone = $phone;
         return $this;
     }
 
@@ -110,22 +139,20 @@ class Client
         return $this->email;
     }
 
-    public function setEmail(string $email): static
+    public function setEmail(?string $email): self
     {
         $this->email = $email;
-
         return $this;
     }
 
     public function getAdresse(): ?string
     {
-        return $this->Adresse;
+        return $this->address;
     }
 
-    public function setAdresse(string $Adresse): static
+    public function setAdresse(string $address): self
     {
-        $this->Adresse = $Adresse;
-
+        $this->address = $address;
         return $this;
     }
 
@@ -133,34 +160,49 @@ class Client
     {
         return $this->createdAt;
     }
-
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    public function setCreatedAt(\DateTimeImmutable $createdAt): self
     {
         $this->createdAt = $createdAt;
+        return $this;
+    }
+
+    public function getProfilePicturePath(): ?string
+    {
+        return $this->profilePicturePath;
+    }
+
+    public function setProfilePicturePath(?string $path): self
+    {
+        $this->profilePicturePath = $path;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, IdentityProof>
+     */
+    public function getIdentityProofs(): Collection
+    {
+        return $this->identityProofs;
+    }
+
+    public function addIdentityProof(IdentityProof $identityProof): self
+    {
+        if (!$this->identityProofs->contains($identityProof)) {
+            $this->identityProofs->add($identityProof);
+            $identityProof->setClient($this);
+        }
 
         return $this;
     }
 
-    public function getIdentityDocumentPath(): ?string
+    public function removeIdentityProof(IdentityProof $identityProof): self
     {
-        return $this->identityDocumentPath;
-    }
+        if ($this->identityProofs->removeElement($identityProof)) {
+            if ($identityProof->getClient() === $this) {
+                $identityProof->setClient(null);
+            }
+        }
 
-    public function setIdentityDocumentPath(string $identityDocumentPath): static
-    {
-        $this->identityDocumentPath = $identityDocumentPath;
-
-        return $this;
-    }
-
-    public function getProfilePicture(): ?string
-    {
-        return $this->profilePicture;
-    }
-
-    public function setProfilePicture(?string $profilePicture): static
-    {
-        $this->profilePicture = $profilePicture;
         return $this;
     }
 }

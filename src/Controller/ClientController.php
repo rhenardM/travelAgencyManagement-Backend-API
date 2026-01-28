@@ -31,7 +31,7 @@ class ClientController extends AbstractController
     }
 
     // GET /api/clients
-    // #[IsGranted(expression: 'is_granted("ROLE_SUPER_ADMIN") or is_granted("ROLE_ADMIN")')]
+    // #[IsGranted('ROLE_SUPER_ADMIN or ROLE_ADMIN')]
     #[Route('/', name: 'client_list', methods: ['GET'])]
     #[OA\Get(
         path: '/api/clients/',
@@ -52,7 +52,7 @@ class ClientController extends AbstractController
     }
 
     // GET /api/clients/{id}
-    // #[IsGranted(expression: 'is_granted("ROLE_SUPER_ADMIN") or is_granted("ROLE_ADMIN")')]
+    // #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/{id}', name: 'client_show', methods: ['GET'])]
     #[OA\Get(
         path: '/api/clients/{id}',
@@ -93,15 +93,16 @@ class ClientController extends AbstractController
             content: new OA\MediaType(
                 mediaType: 'multipart/form-data',
                 schema: new OA\Schema(
-                    required: ['name', 'firstName', 'lastName', 'number', 'email', 'adresse', 'identityDocument'],
+                    required: ['name', 'firstName', 'lastName', 'phone', 'email', 'adresse', 'identityFile'],
                     properties: [
                         new OA\Property(property: 'name', type: 'string'),
                         new OA\Property(property: 'firstName', type: 'string'),
                         new OA\Property(property: 'lastName', type: 'string'),
-                        new OA\Property(property: 'number', type: 'string'),
+                        new OA\Property(property: 'phone', type: 'string'),
                         new OA\Property(property: 'email', type: 'string'),
                         new OA\Property(property: 'adresse', type: 'string'),
-                        new OA\Property(property: 'identityDocument', type: 'string', format: 'binary')
+                        new OA\Property(property: 'profilePicture', type: 'string', format: 'binary'),
+                        new OA\Property(property: 'identityFile', type: 'string', format: 'binary')
                     ]
                 )
             )
@@ -117,10 +118,11 @@ class ClientController extends AbstractController
     public function create(Request $request): Response
     {
         $data = $request->request->all();
-        $file = $request->files->get('identityDocument');
+        $profilePicture = $request->files->get('profilePicture');
+        $identityFile = $request->files->get('identityFile');
 
         try {
-            $client = $this->clientService->createClient($data, $file);
+            $client = $this->clientService->createClient($data, $profilePicture, $identityFile);
             $json = $this->serializer->serialize($client, 'json', ['groups' => ['client']]);
             return $this->json(json_decode($json), Response::HTTP_CREATED);
         } catch (\InvalidArgumentException $e) {
@@ -129,7 +131,7 @@ class ClientController extends AbstractController
     }
 
     // PUT /api/clients/{id}
-    #[IsGranted('ROLE_SUPER_ADMIN')]
+    // #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/{id}', name: 'client_update', methods: ['PUT'])]
     #[OA\Put(
         path: '/api/clients/{id}',
@@ -151,7 +153,7 @@ class ClientController extends AbstractController
                         new OA\Property(property: 'number', type: 'string'),
                         new OA\Property(property: 'email', type: 'string'),
                         new OA\Property(property: 'adresse', type: 'string'),
-                        new OA\Property(property: 'identityDocument', type: 'string', format: 'binary')
+                        new OA\Property(property: 'profilePicture', type: 'string', format: 'binary')
                     ]
                 )
             )
@@ -173,17 +175,17 @@ class ClientController extends AbstractController
         }
 
         $data = $request->request->all();
-        $file = $request->files->get('identityDocument');
+        $file = $request->files->get('profilePicture');
 
         // Met à jour les champs si présents dans la requête
         if (isset($data['name'])) $client->setName($data['name']);
         if (isset($data['firstName'])) $client->setFirstName($data['firstName']);
         if (isset($data['lastName'])) $client->setLastName($data['lastName']);
-        if (isset($data['number'])) $client->setNumber($data['number']);
+        if (isset($data['number'])) $client->setPhone($data['number']);
         if (isset($data['email'])) $client->setEmail($data['email']);
         if (isset($data['adresse'])) $client->setAdresse($data['adresse']);
 
-        // Gestion du fichier identité (optionnel)
+        // Gestion du fichier photo de profil (optionnel)
         if ($file) {
             $allowedMimeTypes = [
                 'application/pdf',
@@ -194,7 +196,7 @@ class ClientController extends AbstractController
             }
             $filename = uniqid('client_') . '.' . $file->guessExtension();
             $file->move($this->getParameter('upload_directory'), $filename);
-            $client->setIdentityDocumentPath('/uploads/clients/' . $filename);
+            $client->setProfilePicturePath('/uploads/clients/' . $filename);
         }
 
         $this->entityManager->flush();

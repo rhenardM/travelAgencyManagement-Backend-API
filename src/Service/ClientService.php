@@ -22,29 +22,52 @@ public function __construct(EntityManagerInterface $em, string $uploadDir)
     /**
      * Crée un client et upload son document
      */
-    public function createClient(array $data, ?UploadedFile $file = null): Client
+    public function createClient(array $data, ?UploadedFile $profilePicture = null, ?UploadedFile $identityFile = null): Client
     {
         $client = new Client();
         $client->setName($data['name']);
         $client->setFirstName($data['firstName']);
         $client->setLastName($data['lastName'] ?? '');
-        $client->setNumber($data['number']);
+        $client->setPhone($data['phone'] ?? '');
         $client->setEmail($data['email'] ?? null);
         $client->setAdresse($data['adresse'] ?? '');
         $client->setCreatedAt(new \DateTimeImmutable());
 
-        // Gestion upload fichier avec vérification du type MIME
-        if ($file) {
+        // Upload photo de profil
+        if ($profilePicture) {
+            $allowedMimeTypes = [
+                'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/jpg',
+            ];
+            if (!in_array($profilePicture->getMimeType(), $allowedMimeTypes, true)) {
+                throw new \InvalidArgumentException('Seules les images (jpg, png, gif, webp, avif) sont acceptées pour la photo de profil.');
+            }
+            $filename = uniqid('profile_') . '.' . $profilePicture->guessExtension();
+            $profilePicture->move($this->uploadDir, $filename);
+            $client->setProfilePicturePath('/uploads/clients/' . $filename);
+        }
+
+        // Upload document d'identité
+        if ($identityFile) {
             $allowedMimeTypes = [
                 'application/pdf',
                 'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/jpg',
             ];
-            if (!in_array($file->getMimeType(), $allowedMimeTypes, true)) {
-                throw new \InvalidArgumentException('Seuls les fichiers PDF ou images (jpg, png, gif, webp, avif) sont acceptés.');
+            if (!in_array($identityFile->getMimeType(), $allowedMimeTypes, true)) {
+                throw new \InvalidArgumentException('Seuls les fichiers PDF ou images (jpg, png, gif, webp, avif) sont acceptés pour la pièce d\'identité.');
             }
-            $filename = uniqid('client_') . '.' . $file->guessExtension();
-            $file->move($this->uploadDir, $filename);
-            $client->setIdentityDocumentPath('/uploads/clients/' . $filename);
+            $filename = uniqid('identity_') . '.' . $identityFile->guessExtension();
+            $identityFile->move($this->uploadDir, $filename);
+
+            // Création de la preuve d'identité
+            $identityProof = new \App\Entity\IdentityProof();
+            $identityProof->setType($data['identityType'] ?? 'unknown');
+            $identityProof->setFilePath('/uploads/clients/' . $filename);
+            $identityProof->setMimeType($identityFile->getMimeType());
+            $identityProof->setFileSize($identityFile->getSize());
+            $identityProof->setStatus('pending');
+            $identityProof->setClient($client);
+            $client->addIdentityProof($identityProof);
+            $this->em->persist($identityProof);
         }
 
         $this->em->persist($client);
