@@ -21,6 +21,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $email = null;
 
     /**
+     *  @var string The user Firstname
+     */
+    #[ORM\Column(length: 100)]
+    private ?string $firstName = null;
+
+    /**
+     * @var string The user Lastname
+     */
+    #[ORM\Column(length: 100)]
+    private ?string $lastName = null;
+
+    /**
      * @var list<string> The user roles
      */
     #[ORM\Column]
@@ -37,6 +49,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->id;
     }
 
+    public function getFirstName(): ?string
+    {
+        return $this->firstName;
+    }
+    public function getLastName(): ?string
+    {
+        return $this->lastName;
+    }
+
     public function getEmail(): ?string
     {
         return $this->email;
@@ -49,6 +70,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function setFirstName(string $firstName): static
+    {
+        $this->firstName = $firstName;
+
+        return $this;
+    }
+
+    public function setLastName(string $lastName): static
+    {
+        $this->lastName = $lastName;
+
+        return $this;
+    }
     /**
      * A visual identifier that represents this user.
      *

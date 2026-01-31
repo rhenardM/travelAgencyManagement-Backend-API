@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use App\Entity\IdentityProof;
 
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
 #[ORM\HasLifecycleCallbacks]
@@ -21,8 +22,10 @@ class Client
 
     #[ORM\Column(length: 255)]
     #[Groups(['client'])]
-
     private ?string $name = null;
+
+    #[ORM\Column(length: 255)]
+    #[Groups(['client'])]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
@@ -154,6 +157,12 @@ class Client
     {
         $this->address = $address;
         return $this;
+    }
+
+    #[Groups(['client'])]
+    public function getAddress(): ?string
+    {
+        return $this->address;
     }
 
     public function getCreatedAt(): ?\DateTimeImmutable

@@ -93,7 +93,7 @@ class ClientController extends AbstractController
             content: new OA\MediaType(
                 mediaType: 'multipart/form-data',
                 schema: new OA\Schema(
-                    required: ['name', 'firstName', 'lastName', 'phone', 'email', 'adresse', 'identityFile'],
+                    required: ['name', 'firstName', 'lastName', 'phone', 'email', 'adresse', 'profilePicture','identityFile'],
                     properties: [
                         new OA\Property(property: 'name', type: 'string'),
                         new OA\Property(property: 'firstName', type: 'string'),
@@ -150,10 +150,11 @@ class ClientController extends AbstractController
                         new OA\Property(property: 'name', type: 'string'),
                         new OA\Property(property: 'firstName', type: 'string'),
                         new OA\Property(property: 'lastName', type: 'string'),
-                        new OA\Property(property: 'number', type: 'string'),
+                        new OA\Property(property: 'phone', type: 'string'),
                         new OA\Property(property: 'email', type: 'string'),
                         new OA\Property(property: 'adresse', type: 'string'),
-                        new OA\Property(property: 'profilePicture', type: 'string', format: 'binary')
+                        new OA\Property(property: 'profilePicture', type: 'string', format: 'binary'),
+                        new OA\Property(property: 'identityFile', type: 'string', format: 'binary'),
                     ]
                 )
             )
@@ -175,13 +176,14 @@ class ClientController extends AbstractController
         }
 
         $data = $request->request->all();
-        $file = $request->files->get('profilePicture');
-
+        $profilePicture = $request->files->get('profilePicture');
+        $identityFile = $request->files->get('identityFile');
+        $file = $profilePicture ?? $identityFile;
         // Met à jour les champs si présents dans la requête
         if (isset($data['name'])) $client->setName($data['name']);
         if (isset($data['firstName'])) $client->setFirstName($data['firstName']);
         if (isset($data['lastName'])) $client->setLastName($data['lastName']);
-        if (isset($data['number'])) $client->setPhone($data['number']);
+        if (isset($data['phone'])) $client->setPhone($data['phone']);
         if (isset($data['email'])) $client->setEmail($data['email']);
         if (isset($data['adresse'])) $client->setAdresse($data['adresse']);
 

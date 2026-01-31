@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\Client;
+use App\Entity\IdentityProof;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
@@ -31,6 +32,7 @@ public function __construct(EntityManagerInterface $em, string $uploadDir)
         $client->setPhone($data['phone'] ?? '');
         $client->setEmail($data['email'] ?? null);
         $client->setAdresse($data['adresse'] ?? '');
+        $client->setProfilePicturePath($profilePicture);
         $client->setCreatedAt(new \DateTimeImmutable());
 
         // Upload photo de profil
@@ -59,7 +61,7 @@ public function __construct(EntityManagerInterface $em, string $uploadDir)
             $identityFile->move($this->uploadDir, $filename);
 
             // Création de la preuve d'identité
-            $identityProof = new \App\Entity\IdentityProof();
+            $identityProof = new IdentityProof();
             $identityProof->setType($data['identityType'] ?? 'unknown');
             $identityProof->setFilePath('/uploads/clients/' . $filename);
             $identityProof->setMimeType($identityFile->getMimeType());

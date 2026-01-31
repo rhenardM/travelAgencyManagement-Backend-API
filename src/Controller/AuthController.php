@@ -16,6 +16,47 @@ use OpenApi\Attributes as OA;
 #[Route('/api')]
 class AuthController extends AbstractController
 {
+    #[Route('/me', name: 'user_me', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/me',
+        summary: 'Infos du user connecté',
+        tags: ['Auth'],
+        security: [['bearerAuth' => []]],
+        responses: [
+            new OA\Response(response: 200, description: 'Infos du user', content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'id', type: 'integer'),
+                    new OA\Property(property: 'email', type: 'string'),
+                    new OA\Property(property: 'firstName', type: 'string'),
+                    new OA\Property(property: 'lastName', type: 'string'),
+                    new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'string')),
+                ]
+            )),
+            new OA\Response(response: 401, description: 'Non authentifié')
+        ]
+    )]
+    public function me(): Response
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json(['error' => 'Non authentifié'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Cast $user to App\Entity\User to access custom methods
+        if (!$user instanceof \App\Entity\User) {
+            return $this->json(['error' => 'Utilisateur non valide'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Retourne les infos de base du user (adapte selon les propriétés à exposer)
+        return $this->json([
+            'id' => $user->getId(),
+            'email' => $user->getEmail(),
+            'firstName' => $user->getFirstName(),
+            'lastName' => $user->getLastName(),
+            'roles' => $user->getRoles(),
+        ]);
+    }
+
     #[Route('/register', name: 'user_register', methods: ['POST'])]
     #[OA\Post(
         path: '/api/register',
@@ -28,6 +69,8 @@ class AuthController extends AbstractController
                 schema: new OA\Schema(
                     required: ['email', 'password'],
                     properties: [
+                        new OA\Property(property: 'firstName', type: 'string'),
+                        new OA\Property(property: 'lastName', type: 'string'),
                         new OA\Property(property: 'email', type: 'string'),
                         new OA\Property(property: 'password', type: 'string'),
                         new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'string'))
@@ -48,6 +91,8 @@ class AuthController extends AbstractController
         }
         $roles = $data['roles'] ?? ['ROLE_USER'];
         $user = new User();
+        $user->setFirstName($data['firstName'] ?? '');
+        $user->setLastName($data['lastName'] ?? '');
         $user->setEmail($data['email']);
         $user->setRoles($roles);
         $user->setPassword($passwordHasher->hashPassword($user, $data['password']));
@@ -69,7 +114,8 @@ class AuthController extends AbstractController
             'message' => 'Cette route ne devrait pas être appelée directement'
         ], Response::HTTP_BAD_REQUEST);
     }
-        /**
+
+    /**
      * Déconnexion (informationnel - JWT est stateless)
      */
     #[Route('/logout', name: 'logout', methods: ['POST'])]
