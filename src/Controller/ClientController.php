@@ -93,16 +93,22 @@ class ClientController extends AbstractController
             content: new OA\MediaType(
                 mediaType: 'multipart/form-data',
                 schema: new OA\Schema(
-                    required: ['name', 'firstName', 'lastName', 'phone', 'email', 'adresse', 'profilePicture','identityFile'],
+                    required: ['name', 'firstName', 'lastName', 'phone', 'email', 'adresse'],
                     properties: [
-                        new OA\Property(property: 'name', type: 'string'),
-                        new OA\Property(property: 'firstName', type: 'string'),
-                        new OA\Property(property: 'lastName', type: 'string'),
-                        new OA\Property(property: 'phone', type: 'string'),
-                        new OA\Property(property: 'email', type: 'string'),
-                        new OA\Property(property: 'adresse', type: 'string'),
-                        new OA\Property(property: 'profilePicture', type: 'string', format: 'binary'),
-                        new OA\Property(property: 'identityFile', type: 'string', format: 'binary')
+                        new OA\Property(property: 'name', type: 'string', description: 'Nom du client'),
+                        new OA\Property(property: 'firstName', type: 'string', description: 'Prénom'),
+                        new OA\Property(property: 'lastName', type: 'string', description: 'Nom de famille'),
+                        new OA\Property(property: 'phone', type: 'string', description: 'Numéro de téléphone'),
+                        new OA\Property(property: 'email', type: 'string', description: 'Email'),
+                        new OA\Property(property: 'adresse', type: 'string', description: 'Adresse'),
+                        new OA\Property(property: 'profilePicture', type: 'string', format: 'binary', description: 'Photo de profil (optionnel)'),
+                        new OA\Property(
+                            property: 'identityType', 
+                            type: 'string', 
+                            description: 'Type de document (passport, national_id, driver_license, voter_card, other)',
+                            enum: ['passport', 'national_id', 'driver_license', 'voter_card', 'other']
+                        ),
+                        new OA\Property(property: 'identityFile', type: 'string', format: 'binary', description: 'Document d\'identité (optionnel)')
                     ]
                 )
             )
@@ -147,14 +153,20 @@ class ClientController extends AbstractController
                 mediaType: 'multipart/form-data',
                 schema: new OA\Schema(
                     properties: [
-                        new OA\Property(property: 'name', type: 'string'),
-                        new OA\Property(property: 'firstName', type: 'string'),
-                        new OA\Property(property: 'lastName', type: 'string'),
-                        new OA\Property(property: 'phone', type: 'string'),
-                        new OA\Property(property: 'email', type: 'string'),
-                        new OA\Property(property: 'adresse', type: 'string'),
-                        new OA\Property(property: 'profilePicture', type: 'string', format: 'binary'),
-                        new OA\Property(property: 'identityFile', type: 'string', format: 'binary'),
+                        new OA\Property(property: 'name', type: 'string', description: 'Nom du client'),
+                        new OA\Property(property: 'firstName', type: 'string', description: 'Prénom'),
+                        new OA\Property(property: 'lastName', type: 'string', description: 'Nom de famille'),
+                        new OA\Property(property: 'phone', type: 'string', description: 'Numéro de téléphone'),
+                        new OA\Property(property: 'email', type: 'string', description: 'Email'),
+                        new OA\Property(property: 'adresse', type: 'string', description: 'Adresse'),
+                        new OA\Property(property: 'profilePicture', type: 'string', format: 'binary', description: 'Nouvelle photo de profil (optionnel)'),
+                        new OA\Property(
+                            property: 'identityType', 
+                            type: 'string', 
+                            description: 'Type de document (optionnel)',
+                            enum: ['passport', 'national_id', 'driver_license', 'voter_card', 'other']
+                        ),
+                        new OA\Property(property: 'identityFile', type: 'string', format: 'binary', description: 'Nouveau document d\'identité (optionnel)')
                     ]
                 )
             )
@@ -178,33 +190,14 @@ class ClientController extends AbstractController
         $data = $request->request->all();
         $profilePicture = $request->files->get('profilePicture');
         $identityFile = $request->files->get('identityFile');
-        $file = $profilePicture ?? $identityFile;
-        // Met à jour les champs si présents dans la requête
-        if (isset($data['name'])) $client->setName($data['name']);
-        if (isset($data['firstName'])) $client->setFirstName($data['firstName']);
-        if (isset($data['lastName'])) $client->setLastName($data['lastName']);
-        if (isset($data['phone'])) $client->setPhone($data['phone']);
-        if (isset($data['email'])) $client->setEmail($data['email']);
-        if (isset($data['adresse'])) $client->setAdresse($data['adresse']);
 
-        // Gestion du fichier photo de profil (optionnel)
-        if ($file) {
-            $allowedMimeTypes = [
-                'application/pdf',
-                'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/jpg',
-            ];
-            if (!in_array($file->getMimeType(), $allowedMimeTypes, true)) {
-                return $this->json(['error' => 'Seuls les fichiers PDF ou images (jpg, png, gif, webp, avif) sont acceptés.'], Response::HTTP_BAD_REQUEST);
-            }
-            $filename = uniqid('client_') . '.' . $file->guessExtension();
-            $file->move($this->getParameter('upload_directory'), $filename);
-            $client->setProfilePicturePath('/uploads/clients/' . $filename);
+        try {
+            $this->clientService->updateClient($client, $data, $profilePicture, $identityFile);
+            $json = $this->serializer->serialize($client, 'json', ['groups' => ['client']]);
+            return $this->json(json_decode($json));
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
-
-        $this->entityManager->flush();
-
-        $json = $this->serializer->serialize($client, 'json', ['groups' => ['client']]);
-        return $this->json(json_decode($json));
     }
 
     // DELETE /api/clients/{id}
