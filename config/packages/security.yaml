@@ -11,6 +11,11 @@ security:
                 class: App\Entity\User
                 property: email
 
+    # Hiérarchie des rôles
+    role_hierarchy:
+        ROLE_ADMIN: ROLE_USER
+        ROLE_SUPER_ADMIN: [ROLE_ADMIN, ROLE_USER]
+
     firewalls:
         dev:
             # Ensure dev tools and static assets are always allowed
@@ -36,17 +41,11 @@ security:
             jwt: ~
 
     access_control:
-    # Profil utilisateur
-    # - { path: ^/profile, roles: ROLE_USER }
+        # Profil utilisateur - tous les utilisateurs authentifiés
+        - { path: ^/api/profile, roles: ROLE_USER }
 
-    # API CLIENTS — ADMIN (lecture & création)
-    # - { path: ^/api/clients, roles: ROLE_ADMIN, methods: [GET, POST] }
-
-    # API CLIENTS — SUPER ADMIN (tout)
-    # - { path: ^/api/clients/, roles: ROLE_SUPER_ADMIN, methods: [GET, POST, PUT, DELETE] }
-
-    # API REGISTER (si réservé au back-office)
-    # - { path: ^/api/register, roles: ROLE_SUPER_ADMIN }
+        # API REGISTER - Réservé au super admin
+        - { path: ^/api/register, roles: ROLE_SUPER_ADMIN }
 
 
 when@test:

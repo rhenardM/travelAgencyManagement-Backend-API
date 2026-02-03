@@ -58,6 +58,14 @@ class IdentityProof
     private ?\DateTimeImmutable $uploadedAt = null;
 
     /**
+     * Compteur de téléchargements
+     * Indique combien de fois le document a été téléchargé/consulté
+     */
+    #[ORM\Column(type: Types::INTEGER)]
+    #[Groups(['client'])]
+    private int $downloadCount = 0;
+
+    /**
      * Client associé
      */
     #[ORM\ManyToOne(inversedBy: 'identityProofs')]
@@ -147,6 +155,17 @@ class IdentityProof
     public function setClient(?Client $client): self
     {
         $this->client = $client;
+        return $this;
+    }
+
+    public function getDownloadCount(): int
+    {
+        return $this->downloadCount;
+    }
+
+    public function incrementDownloadCount(): self
+    {
+        $this->downloadCount++;
         return $this;
     }
 }

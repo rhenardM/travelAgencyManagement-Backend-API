@@ -3,7 +3,7 @@
 
 namespace App\Controller;
 
-// use App\Entity\Client;
+use App\Entity\IdentityProof;
 use App\Service\ClientService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,37 +22,55 @@ class ClientController extends AbstractController
     private ClientService $clientService;
     private SerializerInterface $serializer;
     private EntityManagerInterface $entityManager;
+    private string $uploadDir;
 
-    public function __construct(ClientService $clientService, SerializerInterface $serializer, EntityManagerInterface $entityManager)
+    public function __construct(
+        ClientService $clientService, 
+        SerializerInterface $serializer, 
+        EntityManagerInterface $entityManager,
+        string $uploadDir
+    )
     {
         $this->clientService = $clientService;
         $this->serializer = $serializer;
         $this->entityManager = $entityManager;
+        $this->uploadDir = $uploadDir;
     }
 
     // GET /api/clients
-    // #[IsGranted('ROLE_SUPER_ADMIN or ROLE_ADMIN')]
-    #[Route('/', name: 'client_list', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN')]
+    #[Route('', name: 'client_list', methods: ['GET'])]
     #[OA\Get(
-        path: '/api/clients/',
-        summary: 'Liste tous les clients',
+        path: '/api/clients',
+        summary: 'Liste tous les clients avec pagination',
         security: [['bearerAuth' => []]],
         tags: ['Clients'],
+        parameters: [
+            new OA\Parameter(name: 'page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 1), description: 'Numéro de page'),
+            new OA\Parameter(name: 'limit', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 10), description: 'Nombre d\'éléments par page')
+        ],
         responses: [
-            new OA\Response(response: 200, description: 'Liste des clients'),
+            new OA\Response(response: 200, description: 'Liste des clients avec pagination'),
             new OA\Response(response: 401, description: 'Non authentifié'),
             new OA\Response(response: 403, description: 'Accès refusé')
         ]
     )]
-    public function list(): Response
+    public function list(Request $request): Response
     {
-        $clients = $this->clientService->getAllClients();
-        $json = $this->serializer->serialize($clients, 'json', ['groups' => ['client']]);
-        return $this->json(json_decode($json));
+        $page = max(1, (int) $request->query->get('page', 1));
+        $limit = max(1, min(100, (int) $request->query->get('limit', 10)));
+        
+        $result = $this->clientService->getAllClients($page, $limit);
+        $json = $this->serializer->serialize($result['data'], 'json', ['groups' => ['client']]);
+        
+        return $this->json([
+            'data' => json_decode($json),
+            'pagination' => $result['pagination']
+        ]);
     }
 
     // GET /api/clients/{id}
-    // #[IsGranted('ROLE_SUPER_ADMIN')]
+    #[IsGranted('ROLE_ADMIN')]
     #[Route('/{id}', name: 'client_show', methods: ['GET'])]
     #[OA\Get(
         path: '/api/clients/{id}',
@@ -81,10 +99,10 @@ class ClientController extends AbstractController
     }
 
     // POST /api/clients
-    // #[IsGranted('ROLE_SUPER_ADMIN')]
-    #[Route('/', name: 'client_create', methods: ['POST'])]
+    #[IsGranted('ROLE_SUPER_ADMIN')]
+    #[Route('', name: 'client_create', methods: ['POST'])]
     #[OA\Post(
-        path: '/api/clients/',
+        path: '/api/clients',
         summary: 'Créer un client',
         security: [['bearerAuth' => []]],
         tags: ['Clients'],
@@ -120,7 +138,6 @@ class ClientController extends AbstractController
             new OA\Response(response: 403, description: 'Accès refusé')
         ]
     )]
-    // #[IsGranted('ROLE_SUPER_ADMIN')]
     public function create(Request $request): Response
     {
         $data = $request->request->all();
@@ -137,7 +154,7 @@ class ClientController extends AbstractController
     }
 
     // PUT /api/clients/{id}
-    // #[IsGranted('ROLE_SUPER_ADMIN')]
+    #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/{id}', name: 'client_update', methods: ['PUT'])]
     #[OA\Put(
         path: '/api/clients/{id}',
@@ -179,7 +196,6 @@ class ClientController extends AbstractController
             new OA\Response(response: 403, description: 'Accès refusé')
         ]
     )]
-    // #[IsGranted('ROLE_SUPER_ADMIN')]
     public function update(Request $request, int $id): Response
     {
         $client = $this->clientService->getClientById($id);
@@ -201,7 +217,7 @@ class ClientController extends AbstractController
     }
 
     // DELETE /api/clients/{id}
-    // #[IsGranted('ROLE_SUPER_ADMIN')]
+    #[IsGranted('ROLE_SUPER_ADMIN')]
     #[Route('/{id}', name: 'client_delete', methods: ['DELETE'])]
     #[OA\Delete(
         path: '/api/clients/{id}',
@@ -218,7 +234,6 @@ class ClientController extends AbstractController
             new OA\Response(response: 403, description: 'Accès refusé')
         ]
     )]
-    // #[IsGranted('ROLE_SUPER_ADMIN')]
     public function delete(int $id): Response
     {
         $client = $this->clientService->getClientById($id);
@@ -228,5 +243,49 @@ class ClientController extends AbstractController
 
         $this->clientService->deleteClient($client);
         return $this->json(['message' => 'Client deleted']);
+    }
+
+    // GET /api/clients/{clientId}/identity-proofs/{proofId}/download
+    #[IsGranted('ROLE_ADMIN')]
+    #[Route('/{clientId}/identity-proofs/{proofId}/download', name: 'client_identity_download', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/clients/{clientId}/identity-proofs/{proofId}/download',
+        summary: 'Télécharger un document d\'identité',
+        security: [['bearerAuth' => []]],
+        tags: ['Clients'],
+        parameters: [
+            new OA\Parameter(name: 'clientId', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'proofId', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Document téléchargé'),
+            new OA\Response(response: 404, description: 'Document non trouvé'),
+            new OA\Response(response: 401, description: 'Non authentifié'),
+            new OA\Response(response: 403, description: 'Accès refusé')
+        ]
+    )]
+    public function downloadIdentityProof(int $clientId, int $proofId): Response
+    {
+        $client = $this->clientService->getClientById($clientId);
+        if (!$client) {
+            return $this->json(['error' => 'Client not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $identityProof = $this->entityManager->getRepository(IdentityProof::class)->find($proofId);
+        if (!$identityProof || $identityProof->getClient()->getId() !== $clientId) {
+            return $this->json(['error' => 'Identity proof not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Incrémenter le compteur de téléchargements
+        $identityProof->incrementDownloadCount();
+        $this->entityManager->flush();
+
+        // Retourner le fichier
+        $filePath = $this->uploadDir . '/' . basename($identityProof->getFilePath());
+        if (!file_exists($filePath)) {
+            return $this->json(['error' => 'File not found on server'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->file($filePath);
     }
 }

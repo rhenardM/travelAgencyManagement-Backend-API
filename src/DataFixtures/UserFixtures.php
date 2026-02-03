@@ -21,6 +21,8 @@ class UserFixtures extends Fixture
         // Super Admin
         $superAdmin = new User();
         $superAdmin->setEmail('superadmin@example.com');
+        $superAdmin->setFirstName('Super');
+        $superAdmin->setLastName('Admin');
         $superAdmin->setRoles(['ROLE_SUPER_ADMIN']);
         $superAdmin->setPassword(
             $this->passwordHasher->hashPassword($superAdmin, 'superadminpass')
@@ -30,11 +32,24 @@ class UserFixtures extends Fixture
         // Admin
         $admin = new User();
         $admin->setEmail('admin@example.com');
+        $admin->setFirstName('Admin');
+        $admin->setLastName('User');
         $admin->setRoles(['ROLE_ADMIN']);
         $admin->setPassword(
             $this->passwordHasher->hashPassword($admin, 'adminpass')
         );
         $manager->persist($admin);
+
+        // Simple User
+        $user = new User();
+        $user->setEmail('user@example.com');
+        $user->setFirstName('Simple');
+        $user->setLastName('User');
+        $user->setRoles(['ROLE_USER']);
+        $user->setPassword(
+            $this->passwordHasher->hashPassword($user, 'userpass')
+        );
+        $manager->persist($user);
 
         $manager->flush();
     }

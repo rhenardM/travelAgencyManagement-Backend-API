@@ -92,11 +92,25 @@ public function __construct(EntityManagerInterface $em, string $uploadDir)
     }
 
     /**
-     * Récupère tous les clients
+     * Récupère tous les clients avec pagination
      */
-    public function getAllClients(): array
+    public function getAllClients(int $page = 1, int $limit = 10): array
     {
-        return $this->em->getRepository(Client::class)->findAll();
+        $repository = $this->em->getRepository(Client::class);
+        
+        $offset = ($page - 1) * $limit;
+        $clients = $repository->findBy([], ['createdAt' => 'DESC'], $limit, $offset);
+        $total = $repository->count([]);
+        
+        return [
+            'data' => $clients,
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'totalPages' => (int) ceil($total / $limit)
+            ]
+        ];
     }
 
     /**

@@ -44,6 +44,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?string $password = null;
 
+    /**
+     * Photo de profil de l'utilisateur
+     * Ex: /uploads/profile/user_123.jpg
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $profilePicturePath = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -126,6 +133,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): static
     {
         $this->password = $password;
+
+        return $this;
+    }
+
+    public function getProfilePicturePath(): ?string
+    {
+        return $this->profilePicturePath;
+    }
+
+    public function setProfilePicturePath(?string $profilePicturePath): static
+    {
+        $this->profilePicturePath = $profilePicturePath;
 
         return $this;
     }

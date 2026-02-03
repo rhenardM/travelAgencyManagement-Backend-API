@@ -130,4 +130,47 @@ class AdminController extends AbstractController
 
         return $this->json(['clients' => $data]);
     }
+
+    #[Route('/users', name: 'admin_users_list', methods: ['GET'])]
+    #[OA\Get(
+        path: '/api/admin/users',
+        summary: 'Liste de tous les utilisateurs',
+        tags: ['Admin'],
+        security: [['bearerAuth' => []]],
+        responses: [
+            new OA\Response(response: 200, description: 'Liste des utilisateurs', content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: 'users', type: 'array', items: new OA\Items(
+                        properties: [
+                            new OA\Property(property: 'id', type: 'integer'),
+                            new OA\Property(property: 'email', type: 'string'),
+                            new OA\Property(property: 'firstName', type: 'string'),
+                            new OA\Property(property: 'lastName', type: 'string'),
+                            new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'string')),
+                            new OA\Property(property: 'profilePicturePath', type: 'string')
+                        ]
+                    ))
+                ]
+            )),
+            new OA\Response(response: 401, description: 'Non authentifié'),
+            new OA\Response(response: 403, description: 'Accès refusé')
+        ]
+    )]
+    public function listUsers(): Response
+    {
+        $users = $this->userRepository->findAll();
+        
+        $data = array_map(function($user) {
+            return [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'roles' => $user->getRoles(),
+                'profilePicturePath' => $user->getProfilePicturePath()
+            ];
+        }, $users);
+
+        return $this->json(['users' => $data]);
+    }
 }

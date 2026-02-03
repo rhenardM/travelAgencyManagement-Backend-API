@@ -25,3 +25,11 @@ services:
     App\Service\ClientService:
         arguments:
             $uploadDir: '%clients_upload_dir%'
+    
+    App\Controller\ProfileController:
+        arguments:
+            $uploadDir: '%clients_upload_dir%'
+    
+    App\Controller\ClientController:
+        arguments:
+            $uploadDir: '%clients_upload_dir%'
